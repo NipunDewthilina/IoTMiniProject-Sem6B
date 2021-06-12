@@ -1,0 +1,1 @@
+This repository about a mini project of Semester 6B of the IoT module in University of Moratuwa
