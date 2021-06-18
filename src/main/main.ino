@@ -10,7 +10,6 @@ PubSubClient client(espClient);
 //Variables
 int i = 0;
 int statusCode;
-
 String st;
 String content;
 const char* mqtt_server = "test.mosquitto.org";
@@ -99,10 +98,6 @@ void setup()
  
 }
 void loop() {
-//  while (WiFi.status() != WL_CONNECTED) {
-//    delay(500);
-//    Serial.print(".");
-//   }
   if ((WiFi.status() == WL_CONNECTED))
   {
  delay(1000);
