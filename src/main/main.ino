@@ -24,6 +24,8 @@ int value = 0;
 bool testWifi(void);
 void launchWeb(void);
 void setupAP(void);
+void callback(char* topic, byte* payload, unsigned int length);
+void reconnect(void);
  
 //Establishing Local server at port 80 whenever required
 ESP8266WebServer server(80);
@@ -68,6 +70,9 @@ void setup()
   if (testWifi())
   {
     Serial.println("Succesfully Connected!!!");
+    delay(1000);
+     client.setServer(mqtt_server, 1883);
+     client.setCallback(callback);
     return;
   }
   else
@@ -86,15 +91,12 @@ void setup()
     delay(100);
     server.handleClient();
   }
-
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
  
 }
 void loop() {
   if ((WiFi.status() == WL_CONNECTED))
   {
- 
+ delay(1000);
     if (!client.connected()) {
     reconnect();
   }
@@ -104,10 +106,10 @@ void loop() {
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", value);
+    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
     Serial.print("Publish message: ");
     Serial.println(msg);
-    client.publish("outTopic", msg);
+    client.publish("outTopic_G8", msg);
   }
  
   }
