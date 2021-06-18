@@ -10,8 +10,7 @@ PubSubClient client(espClient);
 //Variables
 int i = 0;
 int statusCode;
-const char* ssid = "text";
-const char* passphrase = "text";
+
 String st;
 String content;
 const char* mqtt_server = "test.mosquitto.org";
@@ -19,6 +18,9 @@ unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE  (50)
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
+const char* ssid;
+const char* password;
+const char* APssid = "my-node-mcu";
 
 //Function Decalration
 bool testWifi(void);
@@ -55,6 +57,7 @@ void setup()
   Serial.println();
   Serial.print("SSID: ");
   Serial.println(esid);
+  ssid = esid.c_str();;
   Serial.println("Reading EEPROM pass");
  
   String epass = "";
@@ -63,12 +66,14 @@ void setup()
     epass += char(EEPROM.read(i));
   }
   Serial.print("PASS: ");
+  password = epass.c_str();;
   Serial.println(epass);
  
  
   WiFi.begin(esid.c_str(), epass.c_str());
   if (testWifi())
   {
+    WiFi.softAP(APssid, "");
     Serial.println("Succesfully Connected!!!");
     delay(1000);
      client.setServer(mqtt_server, 1883);
@@ -94,6 +99,10 @@ void setup()
  
 }
 void loop() {
+//  while (WiFi.status() != WL_CONNECTED) {
+//    delay(500);
+//    Serial.print(".");
+//   }
   if ((WiFi.status() == WL_CONNECTED))
   {
  delay(1000);
@@ -107,7 +116,7 @@ void loop() {
     lastMsg = now;
     ++value;
     snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
-    Serial.print("Publish message: ");
+    Serial.print("Sending : ");
     Serial.println(msg);
     client.publish("outTopic_G8", msg);
   }
@@ -156,7 +165,7 @@ void launchWeb()
  
 void setupAP(void)
 {
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
   WiFi.disconnect();
   delay(100);
   int n = WiFi.scanNetworks();
@@ -196,7 +205,7 @@ void setupAP(void)
   }
   st += "</ol>";
   delay(100);
-  WiFi.softAP("mynodemcu", "");
+  WiFi.softAP(APssid, "");
   Serial.println("softap");
   launchWeb();
   Serial.println("over");
@@ -273,6 +282,8 @@ void createWebServer()
 
 
 void callback(char* topic, byte* payload, unsigned int length) {
+  char* topic1 = "covid-app-g8/safety_check";
+  char* topic2 = "covid-app-g8/overall_daily_data";
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -281,14 +292,43 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is active low on the ESP-01)
-  } else {
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
+//  //Coverting ESP82 to SoftAP and send data to the Phone
+//  Serial.println("Turning the HotSpot On");
+//  launchWeb();
+//  setupAP();// Setup HotSpot
+//  delay(10000);
+//
+////---------------------------------------- Read EEPROM for SSID and pass
+//  Serial.println("Reading EEPROM ssid");
+// 
+//  String esid;
+//  for (int i = 0; i < 32; ++i)
+//  {
+//    esid += char(EEPROM.read(i));
+//  }
+//  Serial.println();
+//  Serial.print("SSID: ");
+//  Serial.println(esid);
+//  Serial.println("Reading EEPROM pass");
+// 
+//  String epass = "";
+//  for (int i = 32; i < 96; ++i)
+//  {
+//    epass += char(EEPROM.read(i));
+//  }
+//  Serial.print("PASS: ");
+//  Serial.println(epass);
+//  
+//  WiFi.begin(esid.c_str(), epass.c_str());
+//  if (testWifi())
+//  {
+//    Serial.println("Succesfully Connected!!!");
+//    delay(1000);
+//     client.setServer(mqtt_server, 1883);
+//     client.setCallback(callback);
+//    return;
+//  }
+  
 
 }
 
@@ -305,7 +345,8 @@ void reconnect() {
       // Once connected, publish an announcement...
       client.publish("outTopic_G8", "hello world Nipun");
       // ... and resubscribe
-      client.subscribe("inTopic_G8");
+      client.subscribe("covid-app-g8/safety_check");
+      client.subscribe("covid-app-g8/overall_daily_data");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
