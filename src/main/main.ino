@@ -286,43 +286,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-
-//  //Coverting ESP82 to SoftAP and send data to the Phone
-//  Serial.println("Turning the HotSpot On");
-//  launchWeb();
-//  setupAP();// Setup HotSpot
-//  delay(10000);
-//
-////---------------------------------------- Read EEPROM for SSID and pass
-//  Serial.println("Reading EEPROM ssid");
-// 
-//  String esid;
-//  for (int i = 0; i < 32; ++i)
-//  {
-//    esid += char(EEPROM.read(i));
-//  }
-//  Serial.println();
-//  Serial.print("SSID: ");
-//  Serial.println(esid);
-//  Serial.println("Reading EEPROM pass");
-// 
-//  String epass = "";
-//  for (int i = 32; i < 96; ++i)
-//  {
-//    epass += char(EEPROM.read(i));
-//  }
-//  Serial.print("PASS: ");
-//  Serial.println(epass);
-//  
-//  WiFi.begin(esid.c_str(), epass.c_str());
-//  if (testWifi())
-//  {
-//    Serial.println("Succesfully Connected!!!");
-//    delay(1000);
-//     client.setServer(mqtt_server, 1883);
-//     client.setCallback(callback);
-//    return;
-//  }
   
 
 }
