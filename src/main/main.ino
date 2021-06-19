@@ -275,10 +275,10 @@ void createWebServer()
   } 
 }
 
-
+//interrupt required when receiving data from the mqtt server
 void callback(char* topic, byte* payload, unsigned int length) {
-  char* topic1 = "covid-app-g8/safety_check";
-  char* topic2 = "covid-app-g8/overall_daily_data";
+  char* topic1 = "G8/safety_check/in";
+  char* topic2 = "G8/node_mcu/sleep";
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -286,6 +286,20 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
+  if(strcmp(topic1,topic) == 0 ){
+    if ((char)payload[0] == true) 
+    {
+      
+    } 
+    else 
+    {
+      
+    }
+  }
+  else if(strcmp(topic2,topic) == 0 )
+  {
+    ESP.deepSleep(atoi((char *)payload)*(3.6e+12));//sleep for 6 hours
+  }
   
 
 }
