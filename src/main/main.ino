@@ -3,7 +3,7 @@
 #include <PubSubClient.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
-
+#include <ESP8266WiFi.h>
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -32,7 +32,10 @@ void launchWeb(void);
 void setupAP(void);
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnect(void);
- 
+//IP details
+IPAddress local_ip(192,168,1,1);
+IPAddress gateway(192,168,1,1);
+IPAddress subnet(255,255,255,0);
 //Establishing Local server at port 80 whenever required
 ESP8266WebServer server(80);
  
@@ -77,9 +80,24 @@ void setup()
   WiFi.begin(esid.c_str(), epass.c_str());
   if (testWifi())
   {
-    WiFi.softAP(APssid, "");
+//    WiFi.softAP(APssid, "");
+//    WiFi.softAPConfig(local_ip, gateway, subnet);
     Serial.println("Succesfully Connected!!!");
+    Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
     delay(1000);
+    //Web interface servers
+  
+  server.on("/home", [](){
+    String homePage = getPage("Colombo");
+    server.send(200, "text/html", homePage);
+  });
+  
+  server.on("/danger", handleDistrict);
+  server.onNotFound(handle_NotFound);
+  
+  server.begin();
+  Serial.println("HTTP server started");
+  delay(1000);
      client.setServer(mqtt_server, 1883);
      client.setCallback(callback);
     return;
@@ -100,9 +118,9 @@ void setup()
     delay(100);
     server.handleClient();
   }
- 
 }
 void loop() {
+  server.handleClient();
   if ((WiFi.status() == WL_CONNECTED))
   {
  delay(1000);
@@ -165,7 +183,7 @@ void launchWeb()
  
 void setupAP(void)
 {
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_AP);
   WiFi.disconnect();
   delay(100);
   int n = WiFi.scanNetworks();
@@ -239,7 +257,7 @@ void createWebServer()
     server.on("/setting", []() {
       String qsid = server.arg("ssid");
       String qpass = server.arg("pass");
-      if (qsid.length() > 0 && qpass.length() > 0) {
+      if (qsid.length() > 0 && qpass.length() > 0 ) {
         Serial.println("clearing eeprom");
         for (int i = 0; i < 96; ++i) {
           EEPROM.write(i, 0);
@@ -278,14 +296,18 @@ void createWebServer()
  
     });
     
-  //Web interface servers
-  
-  server.on("/home", [](){
-    String homePage = getPage("Colombo");
-    server.send(200, "text/html", homePage);
-  });
-  
-  server.on("/danger", handleDistrict);
+//  //Web interface servers
+//  
+//  server.on("/home", [](){
+//    String homePage = getPage("Colombo");
+//    server.send(200, "text/html", homePage);
+//  });
+//  
+//  server.on("/danger", handleDistrict);
+//  server.onNotFound(handle_NotFound);
+//  
+//  server.begin();
+//  Serial.println("HTTP server started");
     
   } 
 }
@@ -355,19 +377,22 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if(strcmp(topic1,topic) == 0  ){
       for (int i = 0; i < length; i++) {
     payload1[i] = (char)payload[i];
+    Serial.print(payload1[i]);
   }
+  
    //TODO handle if necessary
     if ((char*)payload1[0] == "true") 
     {Serial.println("value is true");} 
     else{Serial.println("value is false");}
 
     //cnverting to json and storing
-    storeJson(payload1);
+    storeJson(payload);
     
   }
-  else if (strcmp(topic3,topic) == 0 ){
+  else if (strcmp(topic2,topic) == 0 ){
     for (int i = 0; i < length; i++) {
     payload2[i] = (char)payload[i];
+    Serial.print(payload2[i]);
   }
    //TODO handle if necessary
     if ((char*)payload2[0] == "true") 
@@ -375,7 +400,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     else{Serial.println("value is false");}
 
     //cnverting to json and storing
-    storeJson(payload2);
+    storeJson(payload);
   }
   else if(strcmp(topic2,topic) == 0 )
   {
@@ -432,4 +457,8 @@ void reconnect() {
       delay(5000);
     }
   }
+}
+
+void handle_NotFound(){
+  server.send(404, "text/plain", "Not found");
 }
