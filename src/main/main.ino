@@ -22,6 +22,7 @@ int value = 0;
 const char* ssid;
 const char* password;
 const char* APssid = "my-node-mcu";
+StaticJsonDocument<1024> globalJson;
 
 //Function Decalration
 bool testWifi(void);
@@ -314,12 +315,26 @@ String getPage(String district){
 //obtain danger level from data stored
 String getDangerLevel(String district){
   String defaultResponse = "N/A";
+  if(globalJson.isNull()){
+    Serial.println("safety data not avaible");
+  }
+  else{
+    bool isTrue =  globalJson["safety_facs"];
+    defaultResponse= isTrue ? "Safe" : "Unsafe";
+  }
   return defaultResponse;
 }
 
 //obtain danger trend from data stored
 String getDangerTrend(String district){
   String defaultResponse = "N/A";
+  if(globalJson.isNull()){
+    Serial.println("trend data not avaible");
+  }
+  else{
+    bool isTrue =  globalJson["trend"];
+     defaultResponse= isTrue ? "Increasing" : "Decreasing";
+  }
   return defaultResponse;
 }
 
@@ -335,14 +350,15 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
   if(strcmp(topic1,topic) == 0 ){
+
+   //TODO handle if necessary
     if ((char)payload[0] == true) 
-    {
-      
-    } 
-    else 
-    {
-      
-    }
+    {Serial.println("value is true");} 
+    else{Serial.println("value is false");}
+
+    //cnverting to json and storing
+    storeJson(payload);
+    
   }
   else if(strcmp(topic2,topic) == 0 )
   {
@@ -351,6 +367,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
 
 }
+
+//handle json objct and store in glbal variable
+void storeJson(byte* payload){
+  String input = String((char*)payload);
+  
+  StaticJsonDocument<1024> doc;
+  DeserializationError error = deserializeJson(doc, input);
+  
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+  else{
+    globalJson = doc;
+  }
+  
+  //const char* device = doc["device"]; // "ESP32"
+  //const char* sensorType = doc["sensorType"]; // "Temperature"
+  //bool values = doc["values"]; // true
+}
+
 
 void reconnect() {
   // Loop until we're reconnected
@@ -367,6 +405,7 @@ void reconnect() {
       // ... and resubscribe
       client.subscribe("G8/safety_check/in");
       client.subscribe("G8/node_mcu/sleep");
+      Serial.println("Subscribed to topics");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
