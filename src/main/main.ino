@@ -352,16 +352,30 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-  if(strcmp(topic1,topic) == 0 || strcmp(topic2,topic) == 0 ){
-
+  if(strcmp(topic1,topic) == 0  ){
+      for (int i = 0; i < length; i++) {
+    payload1[i] = (char)payload[i];
+  }
    //TODO handle if necessary
-    if ((char*)payload[0] == "true") 
+    if ((char*)payload1[0] == "true") 
     {Serial.println("value is true");} 
     else{Serial.println("value is false");}
 
     //cnverting to json and storing
-    storeJson(payload);
+    storeJson(payload1);
     
+  }
+  else if (strcmp(topic3,topic) == 0 ){
+    for (int i = 0; i < length; i++) {
+    payload2[i] = (char)payload[i];
+  }
+   //TODO handle if necessary
+    if ((char*)payload2[0] == "true") 
+    {Serial.println("value is true");} 
+    else{Serial.println("value is false");}
+
+    //cnverting to json and storing
+    storeJson(payload2);
   }
   else if(strcmp(topic2,topic) == 0 )
   {
