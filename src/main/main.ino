@@ -22,7 +22,7 @@ int value = 0;
 const char* ssid;
 const char* password;
 const char* APssid = "my-node-mcu";
-StaticJsonDocument<1024> globalJson;
+StaticJsonDocument<2048> globalJson;
 
 //Function Decalration
 bool testWifi(void);
@@ -372,7 +372,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void storeJson(byte* payload){
   String input = String((char*)payload);
   
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<2048> doc;
   DeserializationError error = deserializeJson(doc, input);
   
   if (error) {
