@@ -319,9 +319,10 @@ String getDangerLevel(String district){
     Serial.println("safety data not avaible");
   }
   else{
-    bool isTrue =  globalJson["safety_facs"];
+    bool isTrue =  globalJson[district][0];
     defaultResponse= isTrue ? "Safe" : "Unsafe";
   }
+  Serial.println("danger is "+defaultResponse);
   return defaultResponse;
 }
 
@@ -332,9 +333,10 @@ String getDangerTrend(String district){
     Serial.println("trend data not available");
   }
   else{
-    bool isTrue =  globalJson["trend"];
+    bool isTrue =  globalJson[district][1];
      defaultResponse= isTrue ? "Increasing" : "Decreasing";
   }
+  Serial.println("trend is "+defaultResponse);
   return defaultResponse;
 }
 
@@ -373,7 +375,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void storeJson(byte* payload){
   String input = String((char*)payload);
   
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<2048> doc;
   DeserializationError error = deserializeJson(doc, input);
   
   if (error) {
