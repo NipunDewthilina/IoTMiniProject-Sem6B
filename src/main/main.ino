@@ -17,6 +17,8 @@ const char* mqtt_server = "test.mosquitto.org";
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE  (400)
 #define MQTT_MAX_PACKET_SIZE 2048
+char payload1[MQTT_MAX_PACKET_SIZE];
+char payload2[MQTT_MAX_PACKET_SIZE];
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 const char* ssid;
@@ -319,10 +321,9 @@ String getDangerLevel(String district){
     Serial.println("safety data not avaible");
   }
   else{
-    bool isTrue =  globalJson[district][0];
+    bool isTrue =  globalJson["safety_facs"];
     defaultResponse= isTrue ? "Safe" : "Unsafe";
   }
-  Serial.println("danger is "+defaultResponse);
   return defaultResponse;
 }
 
@@ -333,10 +334,9 @@ String getDangerTrend(String district){
     Serial.println("trend data not available");
   }
   else{
-    bool isTrue =  globalJson[district][1];
+    bool isTrue =  globalJson["trend"];
      defaultResponse= isTrue ? "Increasing" : "Decreasing";
   }
-  Serial.println("trend is "+defaultResponse);
   return defaultResponse;
 }
 
@@ -375,7 +375,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void storeJson(byte* payload){
   String input = String((char*)payload);
   
-  StaticJsonDocument<2048> doc;
+  StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, input);
   
   if (error) {
