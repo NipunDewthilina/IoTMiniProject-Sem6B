@@ -2,6 +2,7 @@
 #include <ESP8266WebServer.h>
 #include <PubSubClient.h>
 #include <EEPROM.h>
+#include <ArduinoJson.h>
 
 
 WiFiClient espClient;
@@ -14,7 +15,8 @@ String st;
 String content;
 const char* mqtt_server = "test.mosquitto.org";
 unsigned long lastMsg = 0;
-#define MSG_BUFFER_SIZE  (150)
+#define MSG_BUFFER_SIZE  (400)
+#define MQTT_MAX_PACKET_SIZE 2048
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 const char* ssid;
@@ -315,10 +317,10 @@ void reconnect() {
     if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       // Once connected, publish an announcement...
-      client.publish("outTopic_G8", "hello world Nipun");
+      client.publish("outTopic_G8", "hello world, Nipun");
       // ... and resubscribe
-      client.subscribe("covid-app-g8/safety_check");
-      client.subscribe("covid-app-g8/overall_daily_data");
+      client.subscribe("G8/safety_check/in");
+      client.subscribe("G8/node_mcu/sleep");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
