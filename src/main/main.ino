@@ -34,10 +34,7 @@ void launchWeb(void);
 void setupAP(void);
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnect(void);
-//IP details
-IPAddress local_ip(192,168,1,1);
-IPAddress gateway(192,168,1,1);
-IPAddress subnet(255,255,255,0);
+
 //Establishing Local server at port 80 whenever required
 ESP8266WebServer server(80);
  
@@ -359,8 +356,12 @@ String getDangerTrend(String district){
     Serial.println("trend data not available");
   }
   else{
+    if (trendJson[district] == 2){
+      defaultResponse = "Not Enough Data";
+    }
+    else{
     bool isTrue =  trendJson[district];
-     defaultResponse= isTrue ? "Increasing" : "Decreasing";
+     defaultResponse= isTrue ? "Increasing" : "Decreasing";}
   }
   
   Serial.println("trend is : "+defaultResponse);
@@ -423,7 +424,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     else{Serial.println("value is false");}
 
     //cnverting to json and storing
-    storeJson(payload);
+//    storeJson(payload);
     
     //cnverting to json and storing//todo change to safety
     safetyToJson(payload);
@@ -436,7 +437,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print(payload2[i]);
   }
     //cnverting to json and storing
-    storeJson(payload);
+//    storeJson(payload);
     trendToJson(payload);
     Serial.println("trend:");
     serializeJsonPretty(trendJson, Serial);
