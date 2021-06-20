@@ -18,10 +18,13 @@ unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE  (400)
 #define MQTT_MAX_PACKET_SIZE 2048
 char msg[MSG_BUFFER_SIZE];
+char payload_global[MQTT_MAX_PACKET_SIZE];
 int value = 0;
 const char* ssid;
 const char* password;
 const char* APssid = "my-node-mcu";
+bool loop_inside = false;
+bool web_launched = false;
 
 //Function Decalration
 bool testWifi(void);
@@ -100,6 +103,12 @@ void setup()
  
 }
 void loop() {
+  loop_inside = true; 
+  if (web_launched == false){
+    launchWeb();
+    web_launched = true;
+  }
+  delay(1000);
   if ((WiFi.status() == WL_CONNECTED))
   {
  delay(1000);
@@ -107,15 +116,14 @@ void loop() {
     reconnect();
   }
   client.loop();
-
   unsigned long now = millis();
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
-    Serial.print("Sending : ");
-    Serial.println(msg);
-    client.publish("outTopic_G8", msg);
+    snprintf (msg, MSG_BUFFER_SIZE, "Check MQTT #%ld", value);
+//    Serial.print("Sending : ");
+//    Serial.println(msg);
+//    client.publish("outTopic_G8", msg);
   }
  
   }
@@ -236,7 +244,7 @@ void createWebServer()
     server.on("/setting", []() {
       String qsid = server.arg("ssid");
       String qpass = server.arg("pass");
-      if (qsid.length() > 0 && qpass.length() > 0) {
+      if (qsid.length() > 0 && qpass.length() > 0 && loop_inside ==false) {
         Serial.println("clearing eeprom");
         for (int i = 0; i < 96; ++i) {
           EEPROM.write(i, 0);
@@ -265,7 +273,8 @@ void createWebServer()
         content = "{\"Success\":\"saved to eeprom... reset to boot into new wifi\"}";
         statusCode = 200;
         ESP.reset();
-      } else {
+      } 
+      else {
         content = "{\"Error\":\"404 not found\"}";
         statusCode = 404;
         Serial.println("Sending 404");
