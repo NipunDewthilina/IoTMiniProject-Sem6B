@@ -14,7 +14,7 @@ String st;
 String content;
 const char* mqtt_server = "test.mosquitto.org";
 unsigned long lastMsg = 0;
-#define MSG_BUFFER_SIZE  (50)
+#define MSG_BUFFER_SIZE  (150)
 char msg[MSG_BUFFER_SIZE];
 int value = 0;
 const char* ssid;
