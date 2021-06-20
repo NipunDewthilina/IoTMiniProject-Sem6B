@@ -298,7 +298,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   else if(strcmp(topic2,topic) == 0 )
   {
-    ESP.deepSleep(atoi((char *)payload)*(3.6e+12));//sleep for 6 hours
+    ESP.deepSleep(atoi((char *)payload)*(3.6e+9));//sleep for 6 hours
   }
   
 
