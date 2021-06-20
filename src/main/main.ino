@@ -80,6 +80,7 @@ void setup()
     delay(1000);
      client.setServer(mqtt_server, 1883);
      client.setCallback(callback);
+     launchWeb();
     return;
   }
   else
@@ -113,7 +114,7 @@ void loop() {
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
+    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 - member x #%ld", value);
     Serial.print("Sending : ");
     Serial.println(msg);
     client.publish("outTopic_G8", msg);
@@ -135,6 +136,7 @@ bool testWifi(void)
   while ( c < 20 ) {
     if (WiFi.status() == WL_CONNECTED)
     {
+      Serial.println(WiFi.localIP());
       return true;
     }
     delay(500);
@@ -384,6 +386,10 @@ void storeJson(byte* payload){
   }
   else{
     globalJson = doc;
+    Serial.println("stored data");
+    serializeJsonPretty(globalJson, Serial);
+    String colData=doc["Colombo"];
+    Serial.println(colData);
   }
   
   //const char* device = doc["device"]; // "ESP32"
