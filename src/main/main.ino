@@ -3,7 +3,7 @@
 #include <PubSubClient.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
-
+#include <ESP8266WiFi.h>
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -17,14 +17,14 @@ const char* mqtt_server = "test.mosquitto.org";
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE  (400)
 #define MQTT_MAX_PACKET_SIZE 2048
+char payload1[MQTT_MAX_PACKET_SIZE];
+char payload2[MQTT_MAX_PACKET_SIZE];
 char msg[MSG_BUFFER_SIZE];
-char payload_global[MQTT_MAX_PACKET_SIZE];
 int value = 0;
 const char* ssid;
 const char* password;
 const char* APssid = "my-node-mcu";
-bool loop_inside = false;
-bool web_launched = false;
+StaticJsonDocument<2048> globalJson;
 
 //Function Decalration
 bool testWifi(void);
@@ -32,7 +32,7 @@ void launchWeb(void);
 void setupAP(void);
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnect(void);
- 
+
 //Establishing Local server at port 80 whenever required
 ESP8266WebServer server(80);
  
@@ -77,9 +77,24 @@ void setup()
   WiFi.begin(esid.c_str(), epass.c_str());
   if (testWifi())
   {
-    WiFi.softAP(APssid, "");
+//    WiFi.softAP(APssid, "");
+//    WiFi.softAPConfig(local_ip, gateway, subnet);
     Serial.println("Succesfully Connected!!!");
+    Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
     delay(1000);
+    //Web interface servers
+  
+  server.on("/home", [](){
+    String homePage = getPage("Colombo");
+    server.send(200, "text/html", homePage);
+  });
+  
+  server.on("/danger", handleDistrict);
+  server.onNotFound(handle_NotFound);
+  
+  server.begin();
+  Serial.println("HTTP server started");
+  delay(1000);
      client.setServer(mqtt_server, 1883);
      client.setCallback(callback);
     return;
@@ -100,15 +115,9 @@ void setup()
     delay(100);
     server.handleClient();
   }
- 
 }
 void loop() {
-  loop_inside = true; 
-  if (web_launched == false){
-    launchWeb();
-    web_launched = true;
-  }
-  delay(1000);
+  server.handleClient();
   if ((WiFi.status() == WL_CONNECTED))
   {
  delay(1000);
@@ -116,11 +125,12 @@ void loop() {
     reconnect();
   }
   client.loop();
+
   unsigned long now = millis();
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "Check MQTT #%ld", value);
+//    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
 //    Serial.print("Sending : ");
 //    Serial.println(msg);
 //    client.publish("outTopic_G8", msg);
@@ -170,7 +180,7 @@ void launchWeb()
  
 void setupAP(void)
 {
-  WiFi.mode(WIFI_AP_STA);
+  WiFi.mode(WIFI_AP);
   WiFi.disconnect();
   delay(100);
   int n = WiFi.scanNetworks();
@@ -244,7 +254,7 @@ void createWebServer()
     server.on("/setting", []() {
       String qsid = server.arg("ssid");
       String qpass = server.arg("pass");
-      if (qsid.length() > 0 && qpass.length() > 0 && loop_inside ==false) {
+      if (qsid.length() > 0 && qpass.length() > 0 ) {
         Serial.println("clearing eeprom");
         for (int i = 0; i < 96; ++i) {
           EEPROM.write(i, 0);
@@ -273,8 +283,7 @@ void createWebServer()
         content = "{\"Success\":\"saved to eeprom... reset to boot into new wifi\"}";
         statusCode = 200;
         ESP.reset();
-      } 
-      else {
+      } else {
         content = "{\"Error\":\"404 not found\"}";
         statusCode = 404;
         Serial.println("Sending 404");
@@ -284,14 +293,18 @@ void createWebServer()
  
     });
     
-  //Web interface servers
-  
-  server.on("/home", [](){
-    String homePage = getPage("Colombo");
-    server.send(200, "text/html", homePage);
-  });
-  
-  server.on("/danger", handleDistrict);
+//  //Web interface servers
+//  
+//  server.on("/home", [](){
+//    String homePage = getPage("Colombo");
+//    server.send(200, "text/html", homePage);
+//  });
+//  
+//  server.on("/danger", handleDistrict);
+//  server.onNotFound(handle_NotFound);
+//  
+//  server.begin();
+//  Serial.println("HTTP server started");
     
   } 
 }
@@ -323,12 +336,26 @@ String getPage(String district){
 //obtain danger level from data stored
 String getDangerLevel(String district){
   String defaultResponse = "N/A";
+  if(globalJson.isNull()){
+    Serial.println("safety data not avaible");
+  }
+  else{
+    bool isTrue =  globalJson["safety_facs"];
+    defaultResponse= isTrue ? "Safe" : "Unsafe";
+  }
   return defaultResponse;
 }
 
 //obtain danger trend from data stored
 String getDangerTrend(String district){
   String defaultResponse = "N/A";
+  if(globalJson.isNull()){
+    Serial.println("trend data not available");
+  }
+  else{
+    bool isTrue =  globalJson["trend"];
+     defaultResponse= isTrue ? "Increasing" : "Decreasing";
+  }
   return defaultResponse;
 }
 
@@ -336,6 +363,7 @@ String getDangerTrend(String district){
 void callback(char* topic, byte* payload, unsigned int length) {
   char* topic1 = "G8/safety_check/in";
   char* topic2 = "G8/node_mcu/sleep";
+  char* topic3 = "G8/trend_check/in";
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -343,15 +371,33 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-  if(strcmp(topic1,topic) == 0 ){
-    if ((char)payload[0] == true) 
-    {
-      
-    } 
-    else 
-    {
-      
-    }
+  if(strcmp(topic1,topic) == 0  ){
+      for (int i = 0; i < length; i++) {
+    payload1[i] = (char)payload[i];
+    Serial.print(payload1[i]);
+  }
+  
+   //TODO handle if necessary
+    if ((char*)payload1[0] == "true") 
+    {Serial.println("value is true");} 
+    else{Serial.println("value is false");}
+
+    //cnverting to json and storing
+    storeJson(payload);
+    
+  }
+  else if (strcmp(topic2,topic) == 0 ){
+    for (int i = 0; i < length; i++) {
+    payload2[i] = (char)payload[i];
+    Serial.print(payload2[i]);
+  }
+   //TODO handle if necessary
+    if ((char*)payload2[0] == "true") 
+    {Serial.println("value is true");} 
+    else{Serial.println("value is false");}
+
+    //cnverting to json and storing
+    storeJson(payload);
   }
   else if(strcmp(topic2,topic) == 0 )
   {
@@ -360,6 +406,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
 
 }
+
+//handle json objct and store in glbal variable
+void storeJson(byte* payload){
+  String input = String((char*)payload);
+  
+  StaticJsonDocument<1024> doc;
+  DeserializationError error = deserializeJson(doc, input);
+  
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return;
+  }
+  else{
+    globalJson = doc;
+  }
+  
+  //const char* device = doc["device"]; // "ESP32"
+  //const char* sensorType = doc["sensorType"]; // "Temperature"
+  //bool values = doc["values"]; // true
+}
+
 
 void reconnect() {
   // Loop until we're reconnected
@@ -375,7 +443,9 @@ void reconnect() {
       client.publish("outTopic_G8", "hello world, Nipun");
       // ... and resubscribe
       client.subscribe("G8/safety_check/in");
+      client.subscribe("G8/trend_check/in");
       client.subscribe("G8/node_mcu/sleep");
+      Serial.println("Subscribed to topics");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -384,4 +454,8 @@ void reconnect() {
       delay(5000);
     }
   }
+}
+
+void handle_NotFound(){
+  server.send(404, "text/plain", "Not found");
 }
