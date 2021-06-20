@@ -22,7 +22,7 @@ int value = 0;
 const char* ssid;
 const char* password;
 const char* APssid = "my-node-mcu";
-StaticJsonDocument<1024> globalJson;
+StaticJsonDocument<2048> globalJson;
 
 //Function Decalration
 bool testWifi(void);
@@ -113,10 +113,10 @@ void loop() {
   if (now - lastMsg > 2000) {
     lastMsg = now;
     ++value;
-    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
-    Serial.print("Sending : ");
-    Serial.println(msg);
-    client.publish("outTopic_G8", msg);
+//    snprintf (msg, MSG_BUFFER_SIZE, "hello world Group 8 #%ld", value);
+//    Serial.print("Sending : ");
+//    Serial.println(msg);
+//    client.publish("outTopic_G8", msg);
   }
  
   }
@@ -329,7 +329,7 @@ String getDangerLevel(String district){
 String getDangerTrend(String district){
   String defaultResponse = "N/A";
   if(globalJson.isNull()){
-    Serial.println("trend data not avaible");
+    Serial.println("trend data not available");
   }
   else{
     bool isTrue =  globalJson["trend"];
@@ -342,6 +342,7 @@ String getDangerTrend(String district){
 void callback(char* topic, byte* payload, unsigned int length) {
   char* topic1 = "G8/safety_check/in";
   char* topic2 = "G8/node_mcu/sleep";
+  char* topic3 = "G8/trend_check/in";
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
@@ -349,10 +350,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-  if(strcmp(topic1,topic) == 0 ){
+  if(strcmp(topic1,topic) == 0 || strcmp(topic2,topic) == 0 ){
 
    //TODO handle if necessary
-    if ((char)payload[0] == true) 
+    if ((char*)payload[0] == "true") 
     {Serial.println("value is true");} 
     else{Serial.println("value is false");}
 
@@ -404,6 +405,7 @@ void reconnect() {
       client.publish("outTopic_G8", "hello world, Nipun");
       // ... and resubscribe
       client.subscribe("G8/safety_check/in");
+      client.subscribe("G8/trend_check/in");
       client.subscribe("G8/node_mcu/sleep");
       Serial.println("Subscribed to topics");
     } else {
