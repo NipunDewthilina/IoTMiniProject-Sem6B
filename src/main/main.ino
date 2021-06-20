@@ -386,7 +386,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     storeJson(payload);
     
   }
-  else if (strcmp(topic2,topic) == 0 ){
+  else if (strcmp(topic3,topic) == 0 ){
     for (int i = 0; i < length; i++) {
     payload2[i] = (char)payload[i];
     Serial.print(payload2[i]);
