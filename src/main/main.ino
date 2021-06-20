@@ -24,7 +24,9 @@ int value = 0;
 const char* ssid;
 const char* password;
 const char* APssid = "my-node-mcu";
-StaticJsonDocument<2048> globalJson;
+
+StaticJsonDocument<2048> safetyJson;
+StaticJsonDocument<2048> trendJson;
 
 //Function Decalration
 bool testWifi(void);
@@ -339,27 +341,61 @@ String getPage(String district){
 //obtain danger level from data stored
 String getDangerLevel(String district){
   String defaultResponse = "N/A";
-  if(globalJson.isNull()){
+  if(safetyJson.isNull()){
     Serial.println("safety data not avaible");
   }
   else{
-    bool isTrue =  globalJson["safety_facs"];
+    bool isTrue =  safetyJson[district];
     defaultResponse= isTrue ? "Safe" : "Unsafe";
   }
+  Serial.println("safety is : "+defaultResponse);
   return defaultResponse;
 }
 
 //obtain danger trend from data stored
 String getDangerTrend(String district){
   String defaultResponse = "N/A";
-  if(globalJson.isNull()){
+  if(trendJson.isNull()){
     Serial.println("trend data not available");
   }
   else{
-    bool isTrue =  globalJson["trend"];
+    bool isTrue =  trendJson[district];
      defaultResponse= isTrue ? "Increasing" : "Decreasing";
   }
+  
+  Serial.println("trend is : "+defaultResponse);
   return defaultResponse;
+}
+
+//handle json objct and store in glbal variable
+void trendToJson(byte* payload){
+  
+  String input = String((char*)payload);
+  StaticJsonDocument<1024> doc;
+  DeserializationError error = deserializeJson(doc, input);
+  
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+  }
+  else{
+    trendJson = doc;
+  }
+}
+
+void safetyToJson(byte* payload){
+  
+  String input = String((char*)payload);
+  StaticJsonDocument<1024> doc;
+  DeserializationError error = deserializeJson(doc, input);
+  
+  if (error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+  }
+  else{
+    safetyJson = doc;
+  }
 }
 
 //interrupt required when receiving data from the mqtt server
@@ -374,6 +410,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
+  
   if(strcmp(topic1,topic) == 0  ){
       for (int i = 0; i < length; i++) {
     payload1[i] = (char)payload[i];
@@ -388,49 +425,27 @@ void callback(char* topic, byte* payload, unsigned int length) {
     //cnverting to json and storing
     storeJson(payload);
     
+    //cnverting to json and storing//todo change to safety
+    safetyToJson(payload);
+    Serial.println("safety:");
+    serializeJsonPretty(safetyJson, Serial);
   }
   else if (strcmp(topic3,topic) == 0 ){
     for (int i = 0; i < length; i++) {
     payload2[i] = (char)payload[i];
     Serial.print(payload2[i]);
   }
-   //TODO handle if necessary
-    if ((char*)payload2[0] == "true") 
-    {Serial.println("value is true");} 
-    else{Serial.println("value is false");}
-
     //cnverting to json and storing
     storeJson(payload);
+    trendToJson(payload);
+    Serial.println("trend:");
+    serializeJsonPretty(trendJson, Serial);
   }
   else if(strcmp(topic2,topic) == 0 )
   {
     ESP.deepSleep(atoi((char *)payload)*(3.6e+9));//sleep for 6 hours
   }
-  
-
 }
-
-//handle json objct and store in glbal variable
-void storeJson(byte* payload){
-  String input = String((char*)payload);
-  
-  StaticJsonDocument<1024> doc;
-  DeserializationError error = deserializeJson(doc, input);
-  
-  if (error) {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.f_str());
-    return;
-  }
-  else{
-    globalJson = doc;
-  }
-  
-  //const char* device = doc["device"]; // "ESP32"
-  //const char* sensorType = doc["sensorType"]; // "Temperature"
-  //bool values = doc["values"]; // true
-}
-
 
 void reconnect() {
   // Loop until we're reconnected
