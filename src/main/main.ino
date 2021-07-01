@@ -10,6 +10,7 @@ PubSubClient client(espClient);
 
 //Variables
 int i = 0;
+int j = 0;
 int statusCode;
 String st;
 String content;
@@ -431,7 +432,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println("safety:");
     serializeJsonPretty(safetyJson, Serial);
   }
-  else if (strcmp(topic3,topic) == 0 ){
+  if (strcmp(topic3,topic) == 0 ){
     for (int i = 0; i < length; i++) {
     payload2[i] = (char)payload[i];
     Serial.print(payload2[i]);
@@ -442,7 +443,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println("trend:");
     serializeJsonPretty(trendJson, Serial);
   }
-  else if(strcmp(topic2,topic) == 0 )
+  if(strcmp(topic2,topic) == 0 )
   {
     ESP.deepSleep(atoi((char *)payload)*(3.6e+9));//sleep for 6 hours
   }
@@ -456,7 +457,9 @@ void reconnect() {
     String clientId = "ESP8266Client-";
     clientId += String(random(0xffff), HEX);
     // Attempt to connect
+ 
     if (client.connect(clientId.c_str())) {
+      j = 0;
       Serial.println("connected");
       // Once connected, publish an announcement...
       client.publish("outTopic_G8", "hello world, Nipun");
@@ -466,11 +469,16 @@ void reconnect() {
       client.subscribe("G8/node_mcu/sleep");
       Serial.println("Subscribed to topics");
     } else {
+      j++;
       Serial.print("failed, rc=");
       Serial.print(client.state());
       Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
+      if (j == 5){
+          ESP.reset();
+          j = 0;
+      }
     }
   }
 }
