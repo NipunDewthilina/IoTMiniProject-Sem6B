@@ -78,16 +78,17 @@ void setup()
  
  
   WiFi.begin(esid.c_str(), epass.c_str());
-  if (testWifi())
+  if (testWifi()) // testing WiFI with eeprm stored ssid and password
   {
 //    WiFi.softAP(APssid, "");
 //    WiFi.softAPConfig(local_ip, gateway, subnet);
     Serial.println("Succesfully Connected!!!");
     Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
     delay(1000);
+    
     //Web interface servers
   
-  server.on("/home", [](){
+    server.on("/home", [](){
     String homePage = getPage("Colombo");
     server.send(200, "text/html", homePage);
   });
